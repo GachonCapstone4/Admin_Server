@@ -81,17 +81,17 @@ public interface EmailRepository extends JpaRepository<Email, Long> {
     long countProcessedByUserId(@Param("userId") Long userId);
 
     // 관리자 대시보드 - 기간별 날짜별 메일 처리량 (native)
-    @Query(value = "SELECT DATE(received_at) as date, COUNT(*) as count FROM Emails WHERE received_at >= :start AND received_at < :end GROUP BY DATE(received_at) ORDER BY DATE(received_at)",
+    @Query(value = "SELECT DATE(received_at) as date, COUNT(*) as count FROM emails WHERE received_at >= :start AND received_at < :end GROUP BY DATE(received_at) ORDER BY DATE(received_at)",
            nativeQuery = true)
     List<Object[]> countByDateRangeGroupedByDate(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     // 관리자 대시보드 - 도메인별 이메일 분포 (native, SUBSTRING_INDEX)
-    @Query(value = "SELECT SUBSTRING_INDEX(sender_email, '@', -1) as domain, COUNT(*) as count FROM Emails GROUP BY domain ORDER BY count DESC LIMIT :lim",
+    @Query(value = "SELECT SUBSTRING_INDEX(sender_email, '@', -1) as domain, COUNT(*) as count FROM emails GROUP BY domain ORDER BY count DESC LIMIT :lim",
            nativeQuery = true)
     List<Object[]> findTopDomains(@Param("lim") int lim);
 
     // 관리자 대시보드 - 주간 추이: 날짜별 수신 수 (native)
-    @Query(value = "SELECT DATE(received_at) as date, COUNT(*) as count FROM Emails WHERE received_at >= :start GROUP BY DATE(received_at) ORDER BY DATE(received_at)",
+    @Query(value = "SELECT DATE(received_at) as date, COUNT(*) as count FROM emails WHERE received_at >= :start GROUP BY DATE(received_at) ORDER BY DATE(received_at)",
            nativeQuery = true)
     List<Object[]> countReceivedGroupedByDate(@Param("start") LocalDateTime start);
 }

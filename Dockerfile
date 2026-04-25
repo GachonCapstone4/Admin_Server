@@ -24,7 +24,7 @@ WORKDIR /app
 RUN addgroup -S suhan && adduser -S suhan -G suhan
 
 # 빌드 산출물 복사
-COPY --from=builder /app/target/email-agent-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=builder /app/target/email-agent-admin-0.0.1-SNAPSHOT.jar app.jar
 
 # 파일 업로드 디렉토리 생성 및 권한 설정
 # k8s PersistentVolumeClaim 마운트 경로와 맞출 것(미리생성만)
