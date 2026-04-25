@@ -22,8 +22,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> findByEmailContainingIgnoreCase(String email, Pageable pageable);
 
     // 관리자 - 업종 검색: BusinessProfiles JOIN (native)
-    @Query(value = "SELECT u.* FROM Users u LEFT JOIN BusinessProfiles bp ON u.user_id = bp.user_id WHERE bp.industry_type LIKE CONCAT('%', :keyword, '%') ORDER BY u.created_at DESC",
-           countQuery = "SELECT COUNT(*) FROM Users u LEFT JOIN BusinessProfiles bp ON u.user_id = bp.user_id WHERE bp.industry_type LIKE CONCAT('%', :keyword, '%')",
+    @Query(value = "SELECT u.* FROM users u LEFT JOIN business_profiles bp ON u.user_id = bp.user_id WHERE bp.industry_type LIKE CONCAT('%', :keyword, '%') ORDER BY u.created_at DESC",
+           countQuery = "SELECT COUNT(*) FROM users u LEFT JOIN business_profiles bp ON u.user_id = bp.user_id WHERE bp.industry_type LIKE CONCAT('%', :keyword, '%')",
            nativeQuery = true)
     Page<User> findByIndustryTypeKeyword(@Param("keyword") String keyword, Pageable pageable);
 }

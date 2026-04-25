@@ -39,7 +39,7 @@ public interface DraftReplyRepository extends JpaRepository<DraftReply, Long> {
     long countByCreatedAtBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     // 관리자 대시보드 - 주간 추이: 날짜별 초안 생성 수 (native)
-    @Query(value = "SELECT DATE(created_at) as date, COUNT(*) as count FROM DraftReplies WHERE created_at >= :start GROUP BY DATE(created_at) ORDER BY DATE(created_at)",
+    @Query(value = "SELECT DATE(created_at) as date, COUNT(*) as count FROM draft_replies WHERE created_at >= :start GROUP BY DATE(created_at) ORDER BY DATE(created_at)",
            nativeQuery = true)
     List<Object[]> countDraftsGroupedByDate(@Param("start") LocalDateTime start);
 

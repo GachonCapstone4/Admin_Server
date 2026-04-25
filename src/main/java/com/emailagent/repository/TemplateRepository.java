@@ -38,9 +38,9 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
                    c.category_name,
                    COUNT(DISTINCT t.template_id) AS template_count,
                    COUNT(tul.usage_log_id)        AS usage_count
-            FROM Categories c
-            LEFT JOIN Templates t   ON c.category_id = t.category_id
-            LEFT JOIN TemplateUsageLogs tul ON t.template_id = tul.template_id
+            FROM categories c
+            LEFT JOIN templates t   ON c.category_id = t.category_id
+            LEFT JOIN template_usage_logs tul ON t.template_id = tul.template_id
             GROUP BY c.category_id, c.category_name
             ORDER BY template_count DESC
             """, nativeQuery = true)
