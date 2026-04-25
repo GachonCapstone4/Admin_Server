@@ -36,7 +36,7 @@ public class KubernetesJobExecutorService {
     private final GithubYamlProperties githubProps;
     private final RestTemplate restTemplate;
 
-    @Value("${kubernetes.job.default-namespace:default}")
+    @Value("${kubernetes.job.default-namespace:admin}")
     private String defaultNamespace;
 
     /**
