@@ -75,7 +75,7 @@ public class KubernetesJobExecutorService {
         );
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Accept", "application/vnd.github.v3.raw");
+        // raw.githubusercontent.com은 CDN 직접 서빙 — GitHub Contents API 전용 헤더 불필요
 
         // Private Repo: PAT가 설정된 경우에만 Authorization 헤더 추가
         if (githubProps.getPat() != null && !githubProps.getPat().isBlank()) {
