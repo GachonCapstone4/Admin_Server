@@ -21,14 +21,14 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 # 비루트 유저/그룹 생성 (k8s 보안 정책 대응)
-RUN addgroup -S suhn && adduser -S suhn -G suhn
+RUN addgroup -S suhan && adduser -S suhan -G suhan
 
 # 빌드 산출물 복사
 COPY --from=builder /app/target/email-agent-0.0.1-SNAPSHOT.jar app.jar
 
 # 파일 업로드 디렉토리 생성 및 권한 설정
-# k8s PersistentVolumeClaim 마운트 경로와 맞출 것
-RUN mkdir -p /app/uploads && chown -R suhn:suhn /app
+# k8s PersistentVolumeClaim 마운트 경로와 맞출 것(미리생성만)
+RUN mkdir -p /app/uploads && chown -R suhan:suhan /app
 
 # JVM 컨테이너 최적화 옵션
 # - UseContainerSupport: cgroup 기반 메모리/CPU 제한 자동 인식 (Java 11+ 기본)
@@ -40,11 +40,12 @@ ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.securit
 # (k8s Deployment env 또는 ConfigMap으로 재정의 가능)
 ENV APP_FILE_UPLOAD_DIR=/app/uploads
 
-USER suhn
+USER suhan
 
 EXPOSE 8080
 
 # exec 형식으로 PID 1에 Java 프로세스 배치 → k8s SIGTERM 정상 수신 (Graceful Shutdown)
 CMD exec java $JAVA_OPTS \
     -Dapp.file.upload-dir=${APP_FILE_UPLOAD_DIR} \
+    -Dspring.profiles.active=admin \
     -jar app.jar

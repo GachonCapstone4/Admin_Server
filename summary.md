@@ -91,17 +91,15 @@ public class EmailClassifyConsumer { ... }
 - `GlobalExceptionHandler` — 에러 응답 공통 형식
 - `ObjectMapper` (Jackson) — JSON 직렬화
 - JPA Repository 전체 — Admin 서비스가 직접 호출
-
-### 선택적 (AiTraining 기능 필요 시)
 - `RabbitMQConfig` — q.2app.training 큐 수신용
 - `TrainingResultConsumer` — 학습 결과 수신 consumer
-
+- `NotificationService` (SSE 알림)
 ### 완전히 불필요 (Admin에서 제외)
 - `GmailApiService`, `GoogleCalendarApiService`, `GoogleOAuthService`
 - `InboxService`, `EmailService`, `DraftService`, `CalendarService`
 - `OnboardingService`, `BusinessService`
 - `PubSubHandlerService`
-- `NotificationService` (SSE 알림)
+
 - `EmailSyncScheduler`
 - `FileTextExtractor`
 

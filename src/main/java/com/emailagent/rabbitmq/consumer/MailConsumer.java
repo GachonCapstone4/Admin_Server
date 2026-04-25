@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -33,6 +34,9 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+// admin 프로파일에서 application-admin.yml의 admin.classify-consumer.enabled=false 로 비활성화
+// matchIfMissing=true: 기존 서비스 서버는 설정 없어도 그대로 활성화
+@ConditionalOnProperty(name = "admin.classify-consumer.enabled", havingValue = "true", matchIfMissing = true)
 public class MailConsumer {
 
 

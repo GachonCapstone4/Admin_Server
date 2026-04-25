@@ -1,0 +1,16 @@
+# Admin 전용 프로파일 설정
+#
+# [비활성화 항목]
+# 1. Google 연동 (OAuth/Gmail/Calendar/PubSub) → scanBasePackages에서 com.emailagent.service 미포함으로 미로드
+# 2. Outbox 전체 (MailScheduler/MailPublisher/MailService) → scanBasePackages에서 해당 패키지 미포함으로 미로드
+# 3. RabbitMQ classify consumer → MailConsumer의 @ConditionalOnProperty + 아래 설정으로 이중 비활성화
+
+# MailConsumer (classify) 이중 비활성화 가드
+# MailConsumer.java의 @ConditionalOnProperty(name="admin.classify-consumer.enabled")와 쌍으로 동작
+admin:
+  classify-consumer:
+    enabled: false
+
+logging:
+  level:
+    com.emailagent: INFO
