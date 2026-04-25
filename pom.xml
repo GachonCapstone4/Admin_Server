@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.emailagent</groupId>
-	<artifactId>email-agent</artifactId>
+	<artifactId>email-agent-admin</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name/>
 	<description/>
