@@ -35,47 +35,47 @@ public class SecurityConfig {
         // [로컬 port-forward curl 테스트용] 인증 전체 비활성화
         // 운영 배포 전 아래 블록을 제거하고 하단 주석 처리된 원본 설정을 복원할 것
         // =====================================================================
-        http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll()
-            );
-
-        return http.build();
-
-        // =====================================================================
-        // [원본 운영 설정 - 아래 주석을 복원하여 사용]
-        // =====================================================================
 //        http
 //            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 //            .csrf(AbstractHttpConfigurer::disable)
 //            .sessionManagement(session ->
 //                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 //            .authorizeHttpRequests(auth -> auth
-//                // 공개 엔드포인트 (인증 불필요)
-//                .requestMatchers(HttpMethod.POST, "/api/users").permitAll()           // 회원가입
-//                .requestMatchers(HttpMethod.POST, "/api/auth/tokens").permitAll()     // 로그인
-//                .requestMatchers(HttpMethod.POST, "/api/auth/password-reset").permitAll() // 비밀번호 찾기
-//                .requestMatchers(HttpMethod.GET, "/api/users/email-availability").permitAll() // 이메일 중복 확인
-//                .requestMatchers(HttpMethod.GET, "/api/integrations/google/callback").permitAll() // OAuth 콜백
-//                .requestMatchers("/api/webhook/**").permitAll()
-//                .requestMatchers("/actuator/health").permitAll()
-//                // 구글 도메인 소유권 인증 HTML 파일 접근 허용 추가
-//                .requestMatchers("/api/google1241a7c6be48577e.html").permitAll()
-//                // 관리자 전용
-//                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-//                // 나머지 인증 필요
-//                .anyRequest().authenticated()
-//            )
-//            .addFilterBefore(
-//                new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService),
-//                UsernamePasswordAuthenticationFilter.class
+//                .anyRequest().permitAll()
 //            );
 //
 //        return http.build();
+
+        // =====================================================================
+        // [원본 운영 설정 - 아래 주석을 복원하여 사용]
+        // =====================================================================
+        http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                // 공개 엔드포인트 (인증 불필요)
+                .requestMatchers(HttpMethod.POST, "/api/users").permitAll()           // 회원가입
+                .requestMatchers(HttpMethod.POST, "/api/auth/tokens").permitAll()     // 로그인
+                .requestMatchers(HttpMethod.POST, "/api/auth/password-reset").permitAll() // 비밀번호 찾기
+                .requestMatchers(HttpMethod.GET, "/api/users/email-availability").permitAll() // 이메일 중복 확인
+                .requestMatchers(HttpMethod.GET, "/api/integrations/google/callback").permitAll() // OAuth 콜백
+                .requestMatchers("/api/webhook/**").permitAll()
+                .requestMatchers("/actuator/health").permitAll()
+                // 구글 도메인 소유권 인증 HTML 파일 접근 허용 추가
+                .requestMatchers("/api/google1241a7c6be48577e.html").permitAll()
+                // 관리자 전용
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                // 나머지 인증 필요
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(
+                new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService),
+                UsernamePasswordAuthenticationFilter.class
+            );
+
+        return http.build();
     }
 
     @Bean
