@@ -60,22 +60,22 @@ public class KubernetesJobExecutorService {
     }
 
     /**
-     * GitHub Raw Content API를 통해 YAML 파일을 문자열로 반환.
-     * Private Repository인 경우 PAT 헤더를 포함한다.
-     * URL 형식: https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{basePath}/{relativePath}
+     * GitHub Contents API를 통해 YAML 파일을 문자열로 반환.
+     * Accept: application/vnd.github.v3.raw 헤더로 Base64 JSON 없이 raw 파일 내용만 수신한다.
+     * URL 형식: https://api.github.com/repos/{owner}/{repo}/contents/{basePath}/{relativePath}?ref={branch}
      */
     private String fetchYamlFromGithub(String relativePath) {
         String rawUrl = String.format(
-                "https://raw.githubusercontent.com/%s/%s/%s/%s/%s",
+                "https://api.github.com/repos/%s/%s/contents/%s/%s?ref=%s",
                 githubProps.getOwner(),
                 githubProps.getRepo(),
-                githubProps.getBranch(),
                 githubProps.getYamlBasePath(),
-                relativePath
+                relativePath,
+                githubProps.getBranch()
         );
 
         HttpHeaders headers = new HttpHeaders();
-        // raw.githubusercontent.com은 CDN 직접 서빙 — GitHub Contents API 전용 헤더 불필요
+        headers.set("Accept", "application/vnd.github.v3.raw");
 
         // Private Repo: PAT가 설정된 경우에만 Authorization 헤더 추가
         if (githubProps.getPat() != null && !githubProps.getPat().isBlank()) {
