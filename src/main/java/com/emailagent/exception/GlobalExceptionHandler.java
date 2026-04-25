@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.io.IOException;
 import java.util.stream.Collectors;
 
+import com.emailagent.exception.GithubYamlFetchException;
+import com.emailagent.exception.KubernetesJobDeployException;
+
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -65,6 +68,20 @@ public class GlobalExceptionHandler {
         log.error("Gmail API 호출 실패", e);
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                 .body(new BaseResponse(HttpStatus.BAD_GATEWAY.value(), e.getMessage()));
+    }
+
+    @ExceptionHandler(GithubYamlFetchException.class)
+    public ResponseEntity<BaseResponse> handleGithubYamlFetch(GithubYamlFetchException e) {
+        log.error("GitHub YAML fetch 실패", e);
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(new BaseResponse(HttpStatus.BAD_GATEWAY.value(), e.getMessage()));
+    }
+
+    @ExceptionHandler(KubernetesJobDeployException.class)
+    public ResponseEntity<BaseResponse> handleKubernetesJobDeploy(KubernetesJobDeployException e) {
+        log.error("Kubernetes Job 배포 실패", e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new BaseResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
     }
 
     @ExceptionHandler(IllegalStateException.class)

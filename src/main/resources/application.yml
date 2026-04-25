@@ -64,6 +64,16 @@ app:
 server:
   port: 8080
 
+kubernetes:
+  github:
+    owner: ${GITHUB_REPO_OWNER}
+    repo: ${GITHUB_REPO_NAME}
+    branch: ${GITHUB_BRANCH}
+    pat: ${GITHUB_PAT}
+    yaml-base-path: ${GITHUB_YAML_BASE_PATH}
+  job:
+    default-namespace: ${K8S_JOB_NAMESPACE}
+
 logging:
   level:
     com.emailagent: DEBUG
