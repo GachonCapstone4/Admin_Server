@@ -32,15 +32,13 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
     Page<Template> findByUserIdWithUserOrderByCreatedAtDesc(@Param("userId") Long userId, Pageable pageable);
 
     // 관리자 - 카테고리별 템플릿 수 + 누적 사용 횟수 통계 (native)
-    // TemplateUsageLogs 엔티티가 없으므로 native SQL로 직접 집계
     @Query(value = """
             SELECT c.category_id,
                    c.category_name,
-                   COUNT(DISTINCT t.template_id) AS template_count,
-                   COUNT(tul.usage_log_id)        AS usage_count
+                   COUNT(DISTINCT t.template_id)  AS template_count,
+                   COALESCE(SUM(t.use_count), 0)  AS usage_count
             FROM categories c
-            LEFT JOIN templates t   ON c.category_id = t.category_id
-            LEFT JOIN template_usage_logs tul ON t.template_id = tul.template_id
+            LEFT JOIN templates t ON c.category_id = t.category_id
             GROUP BY c.category_id, c.category_name
             ORDER BY template_count DESC
             """, nativeQuery = true)
