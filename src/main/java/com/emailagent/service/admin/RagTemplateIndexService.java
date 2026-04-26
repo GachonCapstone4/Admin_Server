@@ -1,14 +1,17 @@
-package com.emailagent.service;
+package com.emailagent.service.admin;
 
 import com.emailagent.domain.entity.Category;
 import com.emailagent.domain.entity.CategoryKeywordRule;
 import com.emailagent.domain.entity.Template;
+import com.emailagent.rabbitmq.config.RabbitMQConfig;
 import com.emailagent.rabbitmq.dto.RagTemplateIndexRequestDTO;
-import com.emailagent.rabbitmq.publisher.RagTemplateIndexPublisher;
 import com.emailagent.repository.BusinessProfileRepository;
 import com.emailagent.repository.CategoryKeywordRuleRepository;
 import com.emailagent.repository.TemplateRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -16,6 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RagTemplateIndexService {
@@ -23,7 +27,7 @@ public class RagTemplateIndexService {
     private final TemplateRepository templateRepository;
     private final BusinessProfileRepository profileRepository;
     private final CategoryKeywordRuleRepository keywordRuleRepository;
-    private final RagTemplateIndexPublisher ragTemplateIndexPublisher;
+    private final RabbitTemplate rabbitTemplate;
 
     public void reindexCategories(List<Category> categories) {
         Map<Long, Category> uniqueCategories = new LinkedHashMap<>();
@@ -46,13 +50,26 @@ public class RagTemplateIndexService {
                 .map(template -> toIndexItem(template, category, emailTone))
                 .toList();
 
-        ragTemplateIndexPublisher.publish(RagTemplateIndexRequestDTO.builder()
+        RagTemplateIndexRequestDTO message = RagTemplateIndexRequestDTO.builder()
                 .requestId(requestId)
                 .userId(category.getUser().getUserId())
                 .payload(RagTemplateIndexRequestDTO.Payload.builder()
                         .templates(indexItems)
                         .build())
-                .build());
+                .build();
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE_APP2RAG,
+                RabbitMQConfig.RK_TEMPLATE_INDEX_INBOUND,
+                message,
+                new CorrelationData(requestId)
+        );
+
+        log.info(
+                "[RagTemplateIndexService] template index 발행 완료 - userId={}, requestId={}",
+                message.getUserId(),
+                requestId
+        );
     }
 
     private RagTemplateIndexRequestDTO.TemplateItem toIndexItem(

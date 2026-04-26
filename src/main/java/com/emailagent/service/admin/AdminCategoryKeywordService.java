@@ -9,7 +9,6 @@ import com.emailagent.dto.response.admin.category.AdminCategoryKeywordItemRespon
 import com.emailagent.dto.response.admin.category.AdminCategoryKeywordListResponse;
 import com.emailagent.repository.CategoryKeywordRuleRepository;
 import com.emailagent.repository.CategoryRepository;
-import com.emailagent.service.RagTemplateIndexService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
