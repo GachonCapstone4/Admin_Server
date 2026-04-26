@@ -51,7 +51,8 @@ public class AdminCategoryKeywordService {
     @Transactional
     public AdminSimpleResponse clearCategoryKeywords(String categoryName) {
         List<Category> categories = findCategoriesByName(normalizeRequired(categoryName, "카테고리명은 필수입니다."));
-        updateKeywordRows(categories, null, List.of());
+        List<String> emptyKeywords = List.of();
+        categories.forEach(category -> category.updateKeywordsByAdmin(category.getColor(), emptyKeywords));
         return AdminSimpleResponse.OK;
     }
 
