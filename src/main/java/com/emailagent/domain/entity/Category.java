@@ -56,4 +56,9 @@ public class Category {
         this.color = color;
         this.keywords = keywords == null ? new ArrayList<>() : new ArrayList<>(keywords);
     }
+
+    public void updateKeywordsByAdmin(String color, List<String> keywords) {
+        this.color = color;
+        this.keywords = keywords == null ? new ArrayList<>() : new ArrayList<>(keywords);
+    }
 }

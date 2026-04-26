@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -26,26 +25,25 @@ public class AdminCategoryKeywordController {
     private final AdminCategoryKeywordService adminCategoryKeywordService;
 
     @GetMapping
-    public AdminCategoryKeywordListResponse getCategories(
-            @RequestParam(value = "user_id", required = false) Long userId) {
-        return adminCategoryKeywordService.getCategories(userId);
+    public AdminCategoryKeywordListResponse getCategories() {
+        return adminCategoryKeywordService.getCategories();
     }
 
     @PostMapping
-    public AdminCategoryKeywordItemResponse createCategory(
+    public AdminCategoryKeywordItemResponse saveCategoryKeywords(
             @Valid @RequestBody AdminCategoryKeywordCreateRequest request) {
-        return adminCategoryKeywordService.createCategory(request);
+        return adminCategoryKeywordService.saveCategoryKeywords(request);
     }
 
-    @PatchMapping("/{category_id}")
-    public AdminCategoryKeywordItemResponse updateCategory(
-            @PathVariable("category_id") Long categoryId,
+    @PatchMapping("/{category_name}")
+    public AdminCategoryKeywordItemResponse updateCategoryKeywords(
+            @PathVariable("category_name") String categoryName,
             @Valid @RequestBody AdminCategoryKeywordUpdateRequest request) {
-        return adminCategoryKeywordService.updateCategory(categoryId, request);
+        return adminCategoryKeywordService.updateCategoryKeywords(categoryName, request);
     }
 
-    @DeleteMapping("/{category_id}")
-    public AdminSimpleResponse deleteCategory(@PathVariable("category_id") Long categoryId) {
-        return adminCategoryKeywordService.deleteCategory(categoryId);
+    @DeleteMapping("/{category_name}")
+    public AdminSimpleResponse clearCategoryKeywords(@PathVariable("category_name") String categoryName) {
+        return adminCategoryKeywordService.clearCategoryKeywords(categoryName);
     }
 }

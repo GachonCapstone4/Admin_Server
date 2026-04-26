@@ -16,9 +16,9 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
             SELECT c
             FROM Category c
             JOIN FETCH c.user u
-            ORDER BY u.userId ASC, c.categoryName ASC
+            ORDER BY c.categoryName ASC, u.userId ASC
             """)
-    List<Category> findAllWithUserOrderByUserIdAndCategoryName();
+    List<Category> findAllWithUserOrderByCategoryNameAndUserId();
 
     @Query("""
             SELECT c
@@ -28,4 +28,13 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
             ORDER BY c.categoryName ASC
             """)
     List<Category> findByUserIdWithUserOrderByCategoryName(@Param("userId") Long userId);
+
+    @Query("""
+            SELECT c
+            FROM Category c
+            JOIN FETCH c.user u
+            WHERE c.categoryName = :categoryName
+            ORDER BY u.userId ASC
+            """)
+    List<Category> findAllByCategoryNameWithUser(@Param("categoryName") String categoryName);
 }

@@ -1,7 +1,6 @@
 package com.emailagent.service.admin;
 
 import com.emailagent.domain.entity.Category;
-import com.emailagent.domain.entity.User;
 import com.emailagent.dto.request.admin.AdminCategoryKeywordCreateRequest;
 import com.emailagent.dto.request.admin.AdminCategoryKeywordUpdateRequest;
 import com.emailagent.dto.response.admin.AdminSimpleResponse;
@@ -9,83 +8,110 @@ import com.emailagent.dto.response.admin.category.AdminCategoryKeywordItemRespon
 import com.emailagent.dto.response.admin.category.AdminCategoryKeywordListResponse;
 import com.emailagent.exception.ResourceNotFoundException;
 import com.emailagent.repository.CategoryRepository;
-import com.emailagent.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class AdminCategoryKeywordService {
 
     private final CategoryRepository categoryRepository;
-    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
-    public AdminCategoryKeywordListResponse getCategories(Long userId) {
-        List<Category> categories = userId == null
-                ? categoryRepository.findAllWithUserOrderByUserIdAndCategoryName()
-                : categoryRepository.findByUserIdWithUserOrderByCategoryName(userId);
-
-        return new AdminCategoryKeywordListResponse(
-                categories.stream()
-                        .map(AdminCategoryKeywordItemResponse::new)
-                        .toList()
-        );
+    public AdminCategoryKeywordListResponse getCategories() {
+        return new AdminCategoryKeywordListResponse(toGroupedResponses(
+                categoryRepository.findAllWithUserOrderByCategoryNameAndUserId()
+        ));
     }
 
     @Transactional
-    public AdminCategoryKeywordItemResponse createCategory(AdminCategoryKeywordCreateRequest request) {
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다. userId=" + request.getUserId()));
-
+    public AdminCategoryKeywordItemResponse saveCategoryKeywords(AdminCategoryKeywordCreateRequest request) {
         String categoryName = normalizeRequired(request.getCategoryName(), "카테고리명은 필수입니다.");
-        if (categoryRepository.existsByUser_UserIdAndCategoryName(user.getUserId(), categoryName)) {
-            throw new IllegalArgumentException("이미 존재하는 카테고리입니다: " + categoryName);
-        }
-
-        Category category = Category.builder()
-                .user(user)
-                .categoryName(categoryName)
-                .color(normalizeOptional(request.getColor()))
-                .keywords(normalizeKeywords(request.getKeywords()))
-                .build();
-
-        return new AdminCategoryKeywordItemResponse(categoryRepository.save(category));
+        List<Category> categories = findCategoriesByName(categoryName);
+        updateKeywordRows(categories, request.getColor(), request.getKeywords());
+        return toGroupedResponse(categoryName, categories);
     }
 
     @Transactional
-    public AdminCategoryKeywordItemResponse updateCategory(Long categoryId, AdminCategoryKeywordUpdateRequest request) {
-        Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("카테고리를 찾을 수 없습니다. categoryId=" + categoryId));
-
-        String categoryName = normalizeRequired(request.getCategoryName(), "카테고리명은 필수입니다.");
-        categoryRepository.findByUser_UserIdAndCategoryName(category.getUser().getUserId(), categoryName)
-                .filter(found -> !found.getCategoryId().equals(categoryId))
-                .ifPresent(found -> {
-                    throw new IllegalArgumentException("이미 존재하는 카테고리입니다: " + categoryName);
-                });
-
-        category.updateByAdmin(
-                categoryName,
-                normalizeOptional(request.getColor()),
-                normalizeKeywords(request.getKeywords())
-        );
-
-        return new AdminCategoryKeywordItemResponse(category);
+    public AdminCategoryKeywordItemResponse updateCategoryKeywords(String categoryName, AdminCategoryKeywordUpdateRequest request) {
+        String normalizedCategoryName = normalizeRequired(categoryName, "카테고리명은 필수입니다.");
+        List<Category> categories = findCategoriesByName(normalizedCategoryName);
+        updateKeywordRows(categories, request.getColor(), request.getKeywords());
+        return toGroupedResponse(normalizedCategoryName, categories);
     }
 
     @Transactional
-    public AdminSimpleResponse deleteCategory(Long categoryId) {
-        if (!categoryRepository.existsById(categoryId)) {
-            throw new ResourceNotFoundException("카테고리를 찾을 수 없습니다. categoryId=" + categoryId);
-        }
-        categoryRepository.deleteById(categoryId);
+    public AdminSimpleResponse clearCategoryKeywords(String categoryName) {
+        List<Category> categories = findCategoriesByName(normalizeRequired(categoryName, "카테고리명은 필수입니다."));
+        updateKeywordRows(categories, null, List.of());
         return AdminSimpleResponse.OK;
+    }
+
+    private List<Category> findCategoriesByName(String categoryName) {
+        List<Category> categories = categoryRepository.findAllByCategoryNameWithUser(categoryName);
+        if (categories.isEmpty()) {
+            throw new ResourceNotFoundException("카테고리를 찾을 수 없습니다. categoryName=" + categoryName);
+        }
+        return categories;
+    }
+
+    private void updateKeywordRows(List<Category> categories, String color, List<String> keywords) {
+        String normalizedColor = normalizeOptional(color);
+        List<String> normalizedKeywords = normalizeKeywords(keywords);
+        categories.forEach(category -> category.updateKeywordsByAdmin(normalizedColor, normalizedKeywords));
+    }
+
+    private List<AdminCategoryKeywordItemResponse> toGroupedResponses(List<Category> categories) {
+        Map<String, List<Category>> grouped = new LinkedHashMap<>();
+        categories.forEach(category ->
+                grouped.computeIfAbsent(category.getCategoryName(), ignored -> new ArrayList<>()).add(category)
+        );
+
+        return grouped.entrySet().stream()
+                .map(entry -> toGroupedResponse(entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
+    private AdminCategoryKeywordItemResponse toGroupedResponse(String categoryName, List<Category> categories) {
+        return new AdminCategoryKeywordItemResponse(
+                categoryName,
+                resolveColor(categories),
+                mergeKeywords(categories),
+                categories.size(),
+                (int) categories.stream()
+                        .map(category -> category.getUser().getUserId())
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .count()
+        );
+    }
+
+    private String resolveColor(List<Category> categories) {
+        return categories.stream()
+                .map(Category::getColor)
+                .map(this::normalizeOptional)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private List<String> mergeKeywords(List<Category> categories) {
+        LinkedHashSet<String> mergedKeywords = new LinkedHashSet<>();
+        categories.forEach(category -> category.getKeywords().forEach(keyword -> {
+            String normalized = normalizeOptional(keyword);
+            if (normalized != null) {
+                mergedKeywords.add(normalized);
+            }
+        }));
+        return new ArrayList<>(mergedKeywords);
     }
 
     private String normalizeRequired(String value, String message) {
