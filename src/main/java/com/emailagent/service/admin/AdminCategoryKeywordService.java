@@ -87,7 +87,6 @@ public class AdminCategoryKeywordService {
 
         LinkedHashSet<String> categoryNames = new LinkedHashSet<>();
         categoryNames.addAll(rulesByName.keySet());
-        categoryNames.addAll(categoriesByName.keySet());
 
         return categoryNames.stream()
                 .map(categoryName -> toGroupedResponse(
