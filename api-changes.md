@@ -625,3 +625,22 @@ ADD COLUMN user_count INT DEFAULT 0;
 - GET /api/admin/templates/summary 신규 추가
   응답: { total_templates, top_category, top_category_usage_count,
           active_rule_count, auto_send_rule_count }
+
+---
+
+## [2026-04-27] AI 재학습 아키텍처 변경 (k8s → SageMaker + Launcher)
+
+### 삭제된 API
+- POST /api/admin/ai-training/preprocessing-jobs
+- POST /api/admin/ai-training/pair-jobs
+- POST /api/admin/ai-training/evaluation-jobs
+
+### 신규 추가 API
+- POST /api/admin/ai-training/deployment-jobs
+- GET  /api/admin/ai-training/jobs/{job_id}/events (SSE)
+
+### 변경사항
+- Job 실행: KubernetesJobTrigger → ProcessBuilder(Launcher)로 변경
+- training-jobs 상태: SageMaker → VPN → RabbitMQ(q.2app.training) → Backend Consumer
+- deployment-jobs 상태: Inference 서버 HTTP 직접 호출 (preload→validate→switch)
+- SSE: 인메모리 Map 방식 → x.sse.fanout RabbitMQ 발행 방식으로 변경

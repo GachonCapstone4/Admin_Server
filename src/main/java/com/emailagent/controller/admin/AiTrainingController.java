@@ -3,6 +3,7 @@ package com.emailagent.controller.admin;
 import com.emailagent.dto.request.admin.training.TrainingJobCreateRequest;
 import com.emailagent.dto.response.admin.training.DatasetCollectionCreateResponse;
 import com.emailagent.dto.response.admin.training.DatasetListResponse;
+import com.emailagent.dto.response.admin.training.DeploymentJobResponse;
 import com.emailagent.dto.response.admin.training.ModelActivateResponse;
 import com.emailagent.dto.response.admin.training.TrainedModelDetailResponse;
 import com.emailagent.dto.response.admin.training.TrainedModelListResponse;
@@ -14,8 +15,10 @@ import com.emailagent.service.admin.DatasetService;
 import com.emailagent.service.admin.TrainedModelService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/api/admin/ai-training")
@@ -71,40 +74,26 @@ public class AiTrainingController {
     }
 
     // ============================================================
-    // 전처리 / Pair / 평가 Job (training_jobs 테이블 + MQ 재사용)
+    // 배포 Job / SSE 이벤트 스트림
     // ============================================================
 
     /**
-     * POST /api/admin/ai-training/preprocessing-jobs
-     * 전처리 Job 생성 — 결측 제거, 공백 정리, email_text 생성 작업
+     * POST /api/admin/ai-training/deployment-jobs
+     * 배포 Job 생성 — Inference 서버 preload→validate→switch 순차 호출
      */
-    @PostMapping("/preprocessing-jobs")
-    public ResponseEntity<TrainingJobCreateResponse> createPreprocessingJob(
-            @CurrentUser Long userId,
-            @Valid @RequestBody TrainingJobCreateRequest request) {
-        return ResponseEntity.ok(aiTrainingService.createPreprocessingJob(userId, request));
+    @PostMapping("/deployment-jobs")
+    public ResponseEntity<DeploymentJobResponse> createDeploymentJob(
+            @CurrentUser Long userId) {
+        return ResponseEntity.ok(aiTrainingService.createDeploymentJob(userId));
     }
 
     /**
-     * POST /api/admin/ai-training/pair-jobs
-     * Pair 생성 Job — SBERT 파인튜닝용 pair 데이터 생성 작업
+     * GET /api/admin/ai-training/jobs/{job_id}/events
+     * Job 이벤트 SSE 스트림 — x.sse.fanout RabbitMQ 발행 방식
      */
-    @PostMapping("/pair-jobs")
-    public ResponseEntity<TrainingJobCreateResponse> createPairJob(
-            @CurrentUser Long userId,
-            @Valid @RequestBody TrainingJobCreateRequest request) {
-        return ResponseEntity.ok(aiTrainingService.createPairJob(userId, request));
-    }
-
-    /**
-     * POST /api/admin/ai-training/evaluation-jobs
-     * 평가 Job 생성 — 학습 완료 모델 성능 평가 작업
-     */
-    @PostMapping("/evaluation-jobs")
-    public ResponseEntity<TrainingJobCreateResponse> createEvaluationJob(
-            @CurrentUser Long userId,
-            @Valid @RequestBody TrainingJobCreateRequest request) {
-        return ResponseEntity.ok(aiTrainingService.createEvaluationJob(userId, request));
+    @GetMapping(value = "/jobs/{job_id}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamJobEvents(@PathVariable("job_id") String jobId) {
+        return aiTrainingService.streamJobEvents(jobId);
     }
 
     // ============================================================

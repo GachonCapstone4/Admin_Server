@@ -52,4 +52,28 @@ public class SseFanoutPublisher {
                     event.getUserId(), event.getSseType(), e.getMessage(), e);
         }
     }
+
+    /**
+     * 트랜잭션 컨텍스트 없이 직접 publish — CompletableFuture 등 비동기 컨텍스트에서 사용.
+     * data 필드를 포함한 payload를 x.sse.fanout exchange로 즉시 발행한다.
+     */
+    public void publish(Long userId, String sseType, String data) {
+        Map<String, Object> payload = Map.of(
+                "user_id",  userId,
+                "sse_type", sseType,
+                "data",     data
+        );
+        try {
+            sseFanoutRabbitTemplate.convertAndSend(
+                    RabbitMQConfig.EXCHANGE_SSE_FANOUT,
+                    "",
+                    payload
+            );
+            log.debug("[SseFanoutPublisher] direct publish 완료 — userId={}, sseType={}, data={}",
+                    userId, sseType, data);
+        } catch (Exception e) {
+            log.error("[SseFanoutPublisher] direct publish 실패 — userId={}, sseType={}, error={}",
+                    userId, sseType, e.getMessage(), e);
+        }
+    }
 }
