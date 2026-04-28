@@ -55,12 +55,6 @@ public class TrainingJob {
     @Column(name = "finished_at")
     private LocalDateTime finishedAt;
 
-    /** Job 실행 시작 시 RUNNING 처리 */
-    public void running() {
-        this.status = TrainingJobStatus.RUNNING;
-        this.startedAt = LocalDateTime.now();
-    }
-
     /** AI worker 완료 이벤트 수신 시 COMPLETED 처리 */
     public void complete(String modelVersion, String metricsJson, LocalDateTime finishedAt) {
         this.status = TrainingJobStatus.COMPLETED;

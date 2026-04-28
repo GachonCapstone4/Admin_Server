@@ -44,11 +44,6 @@ app:
       draft-inbound: 2ai.draft
       draft-result: 2app.draft
 
-  inference:
-    server-url: ${INFERENCE_SERVER_URL:http://localhost:8000}
-  launcher:
-    script-path: ${LAUNCHER_SCRIPT_PATH:/launcher/run.py}
-
   ai:
     server-url: ${AI_SERVER_URL}
     api-key: ${AI_API_KEY:}

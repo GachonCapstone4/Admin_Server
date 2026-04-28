@@ -27,9 +27,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
-// Deprecated: SageMaker + Launcher 방식으로 대체됨
-// KubernetesJobExecutorService는 더 이상 사용하지 않음
-@Deprecated
 @Slf4j
 @Service
 @RequiredArgsConstructor
