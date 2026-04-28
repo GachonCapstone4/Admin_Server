@@ -31,24 +31,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // =====================================================================
-        // [로컬 port-forward curl 테스트용] 인증 전체 비활성화
-        // 운영 배포 전 아래 블록을 제거하고 하단 주석 처리된 원본 설정을 복원할 것
-        // =====================================================================
-//        http
-//            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-//            .csrf(AbstractHttpConfigurer::disable)
-//            .sessionManagement(session ->
-//                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-//            .authorizeHttpRequests(auth -> auth
-//                .anyRequest().permitAll()
-//            );
-//
-//        return http.build();
 
-        // =====================================================================
-        // [원본 운영 설정 - 아래 주석을 복원하여 사용]
-        // =====================================================================
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
@@ -71,6 +54,10 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .addFilterBefore(
+                new PrivateNetworkAccessFilter(),
+                UsernamePasswordAuthenticationFilter.class
+            )
+            .addFilterBefore(
                 new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService),
                 UsernamePasswordAuthenticationFilter.class
             );
@@ -84,7 +71,6 @@ public class SecurityConfig {
         config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000", "https://mymaily.vercel.app"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setExposedHeaders(List.of("Access-Control-Allow-Private-Network"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
