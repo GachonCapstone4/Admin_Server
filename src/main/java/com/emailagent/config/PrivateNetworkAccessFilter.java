@@ -18,12 +18,6 @@ public class PrivateNetworkAccessFilter implements Filter {
         HttpServletResponse response = (HttpServletResponse) res;
 
         response.setHeader("Access-Control-Allow-Private-Network", "true");
-
-        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
-            response.setStatus(HttpServletResponse.SC_OK);
-            return;
-        }
-
         chain.doFilter(req, res);
     }
 }
