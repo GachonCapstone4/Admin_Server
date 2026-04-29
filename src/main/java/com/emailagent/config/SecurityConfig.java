@@ -38,6 +38,8 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // CORS preflight는 항상 허용 (Spring Security CORS 처리 이전에 명시적으로 통과)
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // 공개 엔드포인트 (인증 불필요)
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()           // 회원가입
                 .requestMatchers(HttpMethod.POST, "/api/auth/tokens").permitAll()     // 로그인
