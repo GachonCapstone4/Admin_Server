@@ -54,10 +54,6 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .addFilterBefore(
-                new PrivateNetworkAccessFilter(),
-                UsernamePasswordAuthenticationFilter.class
-            )
-            .addFilterBefore(
                 new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService),
                 UsernamePasswordAuthenticationFilter.class
             );
