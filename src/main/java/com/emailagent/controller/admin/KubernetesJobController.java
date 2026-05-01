@@ -28,4 +28,19 @@ public class KubernetesJobController {
     }
 
     // 새 Job 추가 시: @PostMapping("/jobs/{job-name}") 메서드 1개 + KubernetesJobType 값 1개 추가
+
+    @PostMapping("/jobs/os-dict")
+    public ResponseEntity<KubernetesJobResponse> executeOSDict() {
+        return ResponseEntity.ok(
+                kubernetesJobExecutorService.executeJob(KubernetesJobType.OS_DICT)
+        );
+    }
+
+    @PostMapping("/jobs/vpn-dict")
+    public ResponseEntity<KubernetesJobResponse> executeVPNDict() {
+        return ResponseEntity.ok(
+                kubernetesJobExecutorService.executeJob(KubernetesJobType.VPN_DICT)
+        );
+    }
+
 }

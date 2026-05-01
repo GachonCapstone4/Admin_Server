@@ -7,7 +7,9 @@ package com.emailagent.domain.enums;
  */
 public enum KubernetesJobType {
 
-    NETWORK_DICT("02-network-dict-job.yaml", "네트워크 사전 생성");
+    NETWORK_DICT("02-network-dict-job.yaml", "네트워크 사전 생성"),
+    OS_DICT("04-os-dict-job.yaml", "OS 사전 생성"),
+    VPN_DICT("05-vpn-dict-job.yaml", "VPN 사전 생성");
     // 새 Job 추가 시 위 줄 아래에 값을 추가하세요
 
     private final String yamlPath;
