@@ -2,6 +2,7 @@ package com.emailagent.repository;
 
 import com.emailagent.domain.entity.EmailAnalysisResult;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -53,4 +54,9 @@ public interface EmailAnalysisResultRepository extends JpaRepository<EmailAnalys
     // 관리자 대시보드: 오늘 AI 분석 완료 건수
     @Query("SELECT COUNT(ar) FROM EmailAnalysisResult ar WHERE ar.createdAt >= :start AND ar.createdAt < :end")
     long countByCreatedAtBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    // 관리자 - 사용자 분석 결과 전체 삭제 (Email에 직접 user 없으므로 서브쿼리 사용)
+    @Modifying
+    @Query("DELETE FROM EmailAnalysisResult r WHERE r.email.emailId IN (SELECT e.emailId FROM Email e WHERE e.user.userId = :userId)")
+    void deleteByUserId(@Param("userId") Long userId);
 }

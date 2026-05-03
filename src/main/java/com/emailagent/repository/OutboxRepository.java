@@ -74,4 +74,9 @@ public interface OutboxRepository extends JpaRepository<Outbox, Long> {
 
     // 관리자 - 상태별 건수
     long countByStatus(OutboxStatus status);
+
+    // 관리자 - 사용자 발송 큐 전체 삭제 (Outbox는 user 없고 email 경유하므로 서브쿼리 사용)
+    @Modifying
+    @Query("DELETE FROM Outbox o WHERE o.email.emailId IN (SELECT e.emailId FROM Email e WHERE e.user.userId = :userId)")
+    void deleteByUserId(@Param("userId") Long userId);
 }

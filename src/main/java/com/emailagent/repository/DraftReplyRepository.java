@@ -3,6 +3,7 @@ package com.emailagent.repository;
 import com.emailagent.domain.entity.DraftReply;
 import com.emailagent.domain.enums.DraftStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -43,4 +44,8 @@ public interface DraftReplyRepository extends JpaRepository<DraftReply, Long> {
            nativeQuery = true)
     List<Object[]> countDraftsGroupedByDate(@Param("start") LocalDateTime start);
 
+    // 관리자 - 사용자 초안 전체 삭제 (연동 해제 시)
+    @Modifying
+    @Query("DELETE FROM DraftReply d WHERE d.user.userId = :userId")
+    void deleteByUser_UserId(@Param("userId") Long userId);
 }
