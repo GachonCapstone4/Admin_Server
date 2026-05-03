@@ -27,7 +27,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.ZoneOffset;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +36,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AdminUserService {
+
+    private static final DateTimeFormatter ADMIN_DATE_TIME_FORMATTER =
+            DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     private final UserRepository userRepository;
     private final BusinessProfileRepository businessProfileRepository;
@@ -90,7 +93,7 @@ public class AdminUserService {
                         u.getName(),
                         industryTypeMap.getOrDefault(u.getUserId(), null),
                         u.isActive(),
-                        u.getCreatedAt().toInstant(ZoneOffset.UTC).toString()
+                        formatAdminDateTime(u.getCreatedAt())
                 ))
                 .collect(Collectors.toList());
 
@@ -112,9 +115,9 @@ public class AdminUserService {
         long totalGeneratedDrafts = draftReplyRepository.countByUser_UserId(userId);
         long recentTicketCount = supportTicketRepository.countByUser_UserId(userId);
 
-        // last_login_at: null이면 빈 문자열 대신 null 반환 (프론트에서 처리)
+        // DB의 LocalDateTime은 Asia/Seoul 기준 값으로 내려주고, 프론트에서 KST로 표시한다.
         String lastLoginAt = user.getLastLoginAt() != null
-                ? user.getLastLoginAt().toInstant(ZoneOffset.UTC).toString()
+                ? formatAdminDateTime(user.getLastLoginAt())
                 : null;
 
         return new AdminUserDetailResponse(
@@ -149,23 +152,20 @@ public class AdminUserService {
     /**
      * 특정 사용자의 Gmail / Calendar 연동 상태 조회
      * - granted_scopes 문자열에서 gmail/calendar scope 포함 여부로 연동 여부 판별
-     * - 날짜 포맷: "yyyy-MM-dd HH:mm:ss"
+     * - 날짜 포맷: ISO_LOCAL_DATE_TIME, 프론트에서 KST 값으로 해석
      */
     @Transactional(readOnly = true)
     public AdminUserIntegrationResponse getUserIntegration(Long userId) {
         Integration integration = integrationRepository.findByUser_UserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 사용자의 Google 연동 정보를 찾을 수 없습니다. userId=" + userId));
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
         String scopes = integration.getGrantedScopes() != null ? integration.getGrantedScopes().toLowerCase() : "";
         boolean gmailConnected = scopes.contains("gmail") || scopes.contains("mail.google");
         boolean calendarConnected = scopes.contains("calendar");
 
-        String integratedAt = integration.getCreatedAt().atOffset(ZoneOffset.UTC)
-                .toLocalDateTime().format(formatter);
+        String integratedAt = formatAdminDateTime(integration.getCreatedAt());
         String lastSyncAt = integration.getLastSyncedAt() != null
-                ? integration.getLastSyncedAt().atOffset(ZoneOffset.UTC).toLocalDateTime().format(formatter)
+                ? formatAdminDateTime(integration.getLastSyncedAt())
                 : null;
 
         return new AdminUserIntegrationResponse(
@@ -175,6 +175,10 @@ public class AdminUserService {
                 integratedAt,
                 lastSyncAt
         );
+    }
+
+    private String formatAdminDateTime(LocalDateTime dateTime) {
+        return dateTime != null ? dateTime.format(ADMIN_DATE_TIME_FORMATTER) : null;
     }
 
     /**
