@@ -3,6 +3,7 @@ package com.emailagent.service.admin;
 import com.emailagent.domain.entity.BusinessProfile;
 import com.emailagent.domain.entity.Integration;
 import com.emailagent.domain.entity.User;
+import com.emailagent.domain.enums.UserRole;
 import com.emailagent.dto.response.admin.user.AdminDeleteIntegrationResponse;
 import com.emailagent.dto.response.admin.user.AdminUserDetailResponse;
 import com.emailagent.dto.response.admin.user.AdminUserIntegrationResponse;
@@ -67,11 +68,11 @@ public class AdminUserService {
         if (hasKeyword && "industry_type".equals(searchType)) {
             userPage = userRepository.findByIndustryTypeKeyword(searchKeyword, pageable);
         } else if (hasKeyword && "email".equals(searchType)) {
-            userPage = userRepository.findByEmailContainingIgnoreCase(searchKeyword, pageable);
+            userPage = userRepository.findByRoleAndEmailContainingIgnoreCase(UserRole.USER, searchKeyword, pageable);
         } else if (hasKeyword && "name".equals(searchType)) {
-            userPage = userRepository.findByNameContainingIgnoreCase(searchKeyword, pageable);
+            userPage = userRepository.findByRoleAndNameContainingIgnoreCase(UserRole.USER, searchKeyword, pageable);
         } else {
-            userPage = userRepository.findAll(pageable);
+            userPage = userRepository.findByRole(UserRole.USER, pageable);
         }
 
         // 페이지 내 사용자 ID로 BusinessProfile 배치 조회 (N+1 방지)
