@@ -4,6 +4,7 @@ import com.emailagent.dto.response.admin.dashboard.AdminDashboardSummaryResponse
 import com.emailagent.dto.response.admin.dashboard.AdminDomainDistributionResponse;
 import com.emailagent.dto.response.admin.dashboard.AdminEmailVolumeResponse;
 import com.emailagent.dto.response.admin.dashboard.AdminWeeklyTrendResponse;
+import com.emailagent.domain.enums.UserRole;
 import com.emailagent.repository.DraftReplyRepository;
 import com.emailagent.repository.EmailAnalysisResultRepository;
 import com.emailagent.repository.EmailRepository;
@@ -44,7 +45,7 @@ public class AdminDashboardService {
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
         LocalDateTime tomorrowStart = todayStart.plusDays(1);
 
-        long totalUsers = userRepository.count();
+        long totalUsers = userRepository.countByRole(UserRole.USER);
         // Granular Consent 적용: Gmail(필수) / Calendar(선택) 연동자 수 각각 집계
         long gmailConnectedUsers = integrationRepository.countByIsGmailConnectedTrue();
         long calendarConnectedUsers = integrationRepository.countByIsCalendarConnectedTrue();
