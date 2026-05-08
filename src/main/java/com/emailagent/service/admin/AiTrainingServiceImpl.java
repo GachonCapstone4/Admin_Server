@@ -12,6 +12,9 @@ import com.emailagent.repository.TrainedModelRepository;
 import com.emailagent.repository.TrainingJobRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,6 +35,29 @@ public class AiTrainingServiceImpl implements AiTrainingService {
     private final TrainingJobRepository trainingJobRepository;
     private final TrainedModelRepository trainedModelRepository;
     private final ObjectMapper objectMapper;
+    private final MeterRegistry registry;
+
+    private Counter trainingCompletedCounter;
+    private Counter trainingFailedCounter;
+    private Counter trainingRunningCounter;
+
+    @PostConstruct
+    public void initMetrics() {
+        trainingCompletedCounter = Counter.builder("training_job_events_total")
+                .tag("status", "COMPLETED")
+                .description("Total training job completed events")
+                .register(registry);
+
+        trainingFailedCounter = Counter.builder("training_job_events_total")
+                .tag("status", "FAILED")
+                .description("Total training job failed events")
+                .register(registry);
+
+        trainingRunningCounter = Counter.builder("training_job_events_total")
+                .tag("status", "RUNNING")
+                .description("Total training job running events")
+                .register(registry);
+    }
 
     @Override
     @Transactional
@@ -110,14 +136,22 @@ public class AiTrainingServiceImpl implements AiTrainingService {
 
         LocalDateTime finishedAt = parseFinishedAt(result.getFinishedAt());
 
-        if ("completed".equalsIgnoreCase(result.getStatus())) {
+        String status = result.getStatus().toUpperCase();
+
+        if ("RUNNING".equals(status)) {
+            job.running();
+            trainingRunningCounter.increment();
+            log.info("[AiTrainingService] Job RUNNING — jobId={}", job.getJobId());
+        } else if ("COMPLETED".equals(status)) {
             String metricsJson = serializeMetrics(result);
             job.complete(result.getModelVersion(), metricsJson, finishedAt);
             registerTrainedModelIfAbsent(job.getJobId(), result, metricsJson);
+            trainingCompletedCounter.increment();
             log.info("[AiTrainingService] Job COMPLETED — jobId={}, modelVersion={}",
                     job.getJobId(), result.getModelVersion());
         } else {
             job.fail(result.getErrorMessage(), finishedAt);
+            trainingFailedCounter.increment();
             log.warn("[AiTrainingService] Job FAILED — jobId={}, error={}",
                     job.getJobId(), result.getErrorMessage());
         }
