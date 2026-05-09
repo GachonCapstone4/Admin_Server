@@ -43,4 +43,11 @@ public class KubernetesJobController {
         );
     }
 
+    @PostMapping("/jobs/dataset")
+    public ResponseEntity<KubernetesJobResponse> executeDATAJOB() {
+        return ResponseEntity.ok(
+                kubernetesJobExecutorService.executeJob(KubernetesJobType.DATA_JOB)
+        );
+    }
+
 }

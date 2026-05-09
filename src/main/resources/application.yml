@@ -64,6 +64,13 @@ app:
 server:
   port: 8080
 
+aws:
+  region: ${AWS_REGION}
+  access-key-id: ${AWS_ACCESS_KEY}
+  secret-access-key: ${AWS_SECRET_KEY}
+  sagemaker:
+    spec-path: sagemaker.json
+
 kubernetes:
   github:
     owner: ${GITHUB_REPO_OWNER}
