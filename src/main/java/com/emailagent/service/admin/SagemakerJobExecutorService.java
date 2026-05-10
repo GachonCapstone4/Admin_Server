@@ -19,6 +19,8 @@ import software.amazon.awssdk.services.sagemaker.SageMakerClient;
 import software.amazon.awssdk.services.sagemaker.model.*;
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Slf4j
@@ -102,10 +104,16 @@ public class SagemakerJobExecutorService {
      * - s3Bucket + s3ModelPrefix + jobId → OutputDataConfig.S3OutputPath
      * - useSpotInstance  → EnableManagedSpotTraining (Spot 사용 시 MaxWaitTimeInSeconds 필수)
      */
+    private static final DateTimeFormatter JOB_TIMESTAMP_FMT =
+            DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneId.of("UTC"));
+
     private CreateTrainingJobResponse createTrainingJob(SagemakerJobSpec spec) {
-        // s3OutputPath: s3://{bucket}/{prefix}/{jobId}/
+        // 동일 jobId로 재실행 시 AWS가 중복 이름을 거부하므로, 현재 시각을 suffix로 추가해 유니크 이름 생성
+        String uniqueJobName = spec.getJobId() + "-" + JOB_TIMESTAMP_FMT.format(Instant.now());
+
+        // s3OutputPath: s3://{bucket}/{prefix}/{uniqueJobName}/
         String s3OutputPath = String.format("s3://%s/%s/%s/",
-                spec.getS3Bucket(), spec.getS3ModelPrefix(), spec.getJobId());
+                spec.getS3Bucket(), spec.getS3ModelPrefix(), uniqueJobName);
 
         AlgorithmSpecification algorithmSpec = AlgorithmSpecification.builder()
                 .trainingImage(spec.getTrainingImageUri())
@@ -140,7 +148,7 @@ public class SagemakerJobExecutorService {
                 .build();
 
         CreateTrainingJobRequest.Builder requestBuilder = CreateTrainingJobRequest.builder()
-                .trainingJobName(spec.getJobId())
+                .trainingJobName(uniqueJobName)
                 .roleArn(spec.getRoleArn())
                 .algorithmSpecification(algorithmSpec)
                 .inputDataConfig(List.of(inputChannel))
@@ -157,7 +165,7 @@ public class SagemakerJobExecutorService {
         }
 
         log.info("[SagemakerExecutor] CreateTrainingJob 요청 — jobName={}, spot={}",
-                spec.getJobId(), spec.isUseSpotInstance());
+                uniqueJobName, spec.isUseSpotInstance());
         return sageMakerClient.createTrainingJob(requestBuilder.build());
     }
 }
