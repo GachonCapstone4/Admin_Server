@@ -177,6 +177,19 @@ public class SagemakerJobExecutorService {
             requestBuilder.hyperParameters(spec.getHyperParameters());
         }
 
+        // VPC 설정이 있으면 지정된 서브넷·보안그룹 내에서 학습 Job을 실행한다
+        SagemakerJobSpec.VpcConfig specVpc = spec.getVpcConfig();
+        if (specVpc != null
+                && specVpc.getSubnets() != null && !specVpc.getSubnets().isEmpty()
+                && specVpc.getSecurityGroupIds() != null && !specVpc.getSecurityGroupIds().isEmpty()) {
+            requestBuilder.vpcConfig(VpcConfig.builder()
+                    .subnets(specVpc.getSubnets())
+                    .securityGroupIds(specVpc.getSecurityGroupIds())
+                    .build());
+            log.info("[SagemakerExecutor] VPC 설정 적용 — subnets={}, securityGroups={}",
+                    specVpc.getSubnets(), specVpc.getSecurityGroupIds());
+        }
+
         log.info("[SagemakerExecutor] CreateTrainingJob 요청 — jobName={}, spot={}",
                 uniqueJobName, spec.isUseSpotInstance());
         return sageMakerClient.createTrainingJob(requestBuilder.build());
