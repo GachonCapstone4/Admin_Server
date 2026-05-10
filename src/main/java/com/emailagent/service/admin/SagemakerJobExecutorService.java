@@ -159,23 +159,23 @@ public class SagemakerJobExecutorService {
                 .stoppingCondition(stoppingCondition)
                 .enableManagedSpotTraining(spec.isUseSpotInstance());
 
-        // Python 학습 스크립트가 snake_case 환경변수로 요구하는 필수 값들을 추가.
-        // sagemaker.json의 environment 블록에는 PYTHONUNBUFFERED 등만 있으므로
-        // spec 최상위 필드를 snake_case 키로 병합하여 전달한다.
-        Map<String, String> mergedEnv = new LinkedHashMap<>();
-        if (spec.getEnvironment() != null) {
-            mergedEnv.putAll(spec.getEnvironment());
+        // environment: PYTHONUNBUFFERED 등 컨테이너 환경변수만 전달
+        if (spec.getEnvironment() != null && !spec.getEnvironment().isEmpty()) {
+            requestBuilder.environment(spec.getEnvironment());
         }
-        mergedEnv.put("job_id", uniqueJobName);
-        mergedEnv.put("model_version", spec.getModelVersion());
-        mergedEnv.put("s3_bucket", spec.getS3Bucket());
-        mergedEnv.put("s3_model_prefix", spec.getS3ModelPrefix());
-        mergedEnv.put("dataset_s3_uri", spec.getDatasetS3Uri());
-        requestBuilder.environment(mergedEnv);
 
-        if (spec.getHyperParameters() != null && !spec.getHyperParameters().isEmpty()) {
-            requestBuilder.hyperParameters(spec.getHyperParameters());
+        // SageMaker는 hyperParameters를 --key value 형태의 CLI 인자로 Python 스크립트에 전달한다.
+        // Python 스크립트가 argparse로 args.job_id 등을 읽으므로 필수 값은 반드시 hyperParameters로 넘겨야 한다.
+        Map<String, String> mergedHyperParams = new LinkedHashMap<>();
+        if (spec.getHyperParameters() != null) {
+            mergedHyperParams.putAll(spec.getHyperParameters());
         }
+        mergedHyperParams.put("job_id", uniqueJobName);
+        mergedHyperParams.put("model_version", spec.getModelVersion());
+        mergedHyperParams.put("s3_bucket", spec.getS3Bucket());
+        mergedHyperParams.put("s3_model_prefix", spec.getS3ModelPrefix());
+        mergedHyperParams.put("dataset_s3_uri", spec.getDatasetS3Uri());
+        requestBuilder.hyperParameters(mergedHyperParams);
 
         log.info("[SagemakerExecutor] CreateTrainingJob 요청 — jobName={}, spot={}",
                 uniqueJobName, spec.isUseSpotInstance());
