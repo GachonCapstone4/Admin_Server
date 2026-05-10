@@ -21,7 +21,9 @@ import software.amazon.awssdk.services.sagemaker.model.*;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -157,9 +159,20 @@ public class SagemakerJobExecutorService {
                 .stoppingCondition(stoppingCondition)
                 .enableManagedSpotTraining(spec.isUseSpotInstance());
 
-        if (spec.getEnvironment() != null && !spec.getEnvironment().isEmpty()) {
-            requestBuilder.environment(spec.getEnvironment());
+        // Python 학습 스크립트가 snake_case 환경변수로 요구하는 필수 값들을 추가.
+        // sagemaker.json의 environment 블록에는 PYTHONUNBUFFERED 등만 있으므로
+        // spec 최상위 필드를 snake_case 키로 병합하여 전달한다.
+        Map<String, String> mergedEnv = new LinkedHashMap<>();
+        if (spec.getEnvironment() != null) {
+            mergedEnv.putAll(spec.getEnvironment());
         }
+        mergedEnv.put("job_id", uniqueJobName);
+        mergedEnv.put("model_version", spec.getModelVersion());
+        mergedEnv.put("s3_bucket", spec.getS3Bucket());
+        mergedEnv.put("s3_model_prefix", spec.getS3ModelPrefix());
+        mergedEnv.put("dataset_s3_uri", spec.getDatasetS3Uri());
+        requestBuilder.environment(mergedEnv);
+
         if (spec.getHyperParameters() != null && !spec.getHyperParameters().isEmpty()) {
             requestBuilder.hyperParameters(spec.getHyperParameters());
         }
