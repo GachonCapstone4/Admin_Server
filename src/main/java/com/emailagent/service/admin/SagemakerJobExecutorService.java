@@ -159,23 +159,23 @@ public class SagemakerJobExecutorService {
                 .stoppingCondition(stoppingCondition)
                 .enableManagedSpotTraining(spec.isUseSpotInstance());
 
-        // environment: PYTHONUNBUFFERED 등 컨테이너 환경변수만 전달
-        if (spec.getEnvironment() != null && !spec.getEnvironment().isEmpty()) {
-            requestBuilder.environment(spec.getEnvironment());
+        // Python 스크립트는 os.getenv("JOB_ID") 등 UPPERCASE 환경변수를 argparse default로 읽는다.
+        // 소문자(job_id)로 주입하면 os.getenv가 None을 반환하므로 반드시 UPPERCASE로 설정해야 한다.
+        Map<String, String> mergedEnv = new LinkedHashMap<>();
+        if (spec.getEnvironment() != null) {
+            mergedEnv.putAll(spec.getEnvironment());
         }
+        mergedEnv.put("JOB_ID", uniqueJobName);
+        mergedEnv.put("MODEL_VERSION", spec.getModelVersion());
+        mergedEnv.put("S3_BUCKET", spec.getS3Bucket());
+        mergedEnv.put("S3_MODEL_PREFIX", spec.getS3ModelPrefix());
+        mergedEnv.put("DATASET_S3_URI", spec.getDatasetS3Uri());
+        requestBuilder.environment(mergedEnv);
 
-        // SageMaker는 hyperParameters를 --key value 형태의 CLI 인자로 Python 스크립트에 전달한다.
-        // Python 스크립트가 argparse로 args.job_id 등을 읽으므로 필수 값은 반드시 hyperParameters로 넘겨야 한다.
-        Map<String, String> mergedHyperParams = new LinkedHashMap<>();
-        if (spec.getHyperParameters() != null) {
-            mergedHyperParams.putAll(spec.getHyperParameters());
+        // hyperParameters: epochs, batch_size 등 ML 학습 파라미터만 전달
+        if (spec.getHyperParameters() != null && !spec.getHyperParameters().isEmpty()) {
+            requestBuilder.hyperParameters(spec.getHyperParameters());
         }
-        mergedHyperParams.put("job_id", uniqueJobName);
-        mergedHyperParams.put("model_version", spec.getModelVersion());
-        mergedHyperParams.put("s3_bucket", spec.getS3Bucket());
-        mergedHyperParams.put("s3_model_prefix", spec.getS3ModelPrefix());
-        mergedHyperParams.put("dataset_s3_uri", spec.getDatasetS3Uri());
-        requestBuilder.hyperParameters(mergedHyperParams);
 
         log.info("[SagemakerExecutor] CreateTrainingJob 요청 — jobName={}, spot={}",
                 uniqueJobName, spec.isUseSpotInstance());
