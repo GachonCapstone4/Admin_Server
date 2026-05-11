@@ -29,6 +29,10 @@ app:
   file:
     upload-dir: C:/dev/uploads   # 파일 업로드 저장 경로
   rabbitmq:
+    management:
+      url: http://${RABBITMQ_HOST}:15672
+      username: ${RABBITMQ_USER}
+      password: ${RABBITMQ_PASS}
     exchange:
       app2ai: x.app2ai.direct
       ai2app: x.ai2app.direct

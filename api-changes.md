@@ -625,3 +625,8 @@ ADD COLUMN user_count INT DEFAULT 0;
 - GET /api/admin/templates/summary 신규 추가
   응답: { total_templates, top_category, top_category_usage_count,
           active_rule_count, auto_send_rule_count }
+
+## [2026-05-11] 관리자 페이지 DLQ 메시지 수 조회 및 삭제 api 추가
+
+GET  /api/admin/rabbitmq/dlq/count   → DLQ 메시지 수 조회
+DELETE /api/admin/rabbitmq/dlq/purge → DLQ 전체 삭제
