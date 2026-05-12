@@ -2,7 +2,7 @@ package com.emailagent.controller.admin;
 
 import com.emailagent.dto.response.admin.SagemakerJobResponse;
 import com.emailagent.dto.response.auth.BaseResponse;
-import com.emailagent.rabbitmq.publisher.AdminPublisher;
+import com.emailagent.rabbitmq.publisher.admin.AdminPublisher;
 import com.emailagent.security.CurrentUser;
 import com.emailagent.service.admin.SagemakerJobExecutorService;
 import lombok.RequiredArgsConstructor;

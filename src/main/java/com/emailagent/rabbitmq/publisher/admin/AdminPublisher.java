@@ -1,4 +1,4 @@
-package com.emailagent.rabbitmq.publisher;
+package com.emailagent.rabbitmq.publisher.admin;
 
 import com.emailagent.rabbitmq.config.RabbitMQConfig;
 import com.emailagent.rabbitmq.dto.AdminDeploymentMessage;

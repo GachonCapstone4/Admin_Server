@@ -40,7 +40,7 @@ import java.util.TimeZone;
                 "com.emailagent.exception",         // GlobalExceptionHandler
                 "com.emailagent.rabbitmq.config",     // RabbitMQConfig (q.2app.training 큐 설정)
                 "com.emailagent.rabbitmq.consumer",  // TrainingResultConsumer (MailConsumer는 비활성화)
-                "com.emailagent.rabbitmq.publisher", // AdminPublisher (모델 배포 요청 발행)
+                "com.emailagent.rabbitmq.publisher.admin", // AdminPublisher (모델 배포 요청 발행)
                 "com.emailagent.rabbitmq.event"      // SseFanoutPublisher
         }
 )
