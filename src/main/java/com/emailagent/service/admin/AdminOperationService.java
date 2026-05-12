@@ -8,7 +8,6 @@ import com.emailagent.dto.response.admin.operation.AdminJobErrorResponse;
 import com.emailagent.dto.response.admin.operation.AdminJobListResponse;
 import com.emailagent.dto.response.admin.operation.AdminJobSummaryResponse;
 import com.emailagent.exception.ResourceNotFoundException;
-import com.emailagent.rabbitmq.config.OutboxPolicy;
 import com.emailagent.repository.OutboxRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +25,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AdminOperationService {
+
+    private static final int MAX_RETRY = 3;
 
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
@@ -97,7 +98,7 @@ public class AdminOperationService {
                 outbox.getStatus().name(),
                 payloadJson,
                 outbox.getRetryCount(),
-                OutboxPolicy.MAX_RETRY,
+                MAX_RETRY,
                 outbox.getCreatedAt().toInstant(ZoneOffset.UTC).toString(),
                 sentAt,
                 finishedAt
