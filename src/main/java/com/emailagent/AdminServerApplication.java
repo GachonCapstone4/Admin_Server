@@ -38,9 +38,10 @@ import java.util.TimeZone;
                 "com.emailagent.service.admin",     // Admin 서비스만
                 "com.emailagent.repository",        // JPA Repository 전체 (Admin 서비스 직접 의존)
                 "com.emailagent.exception",         // GlobalExceptionHandler
-                "com.emailagent.rabbitmq.config",   // RabbitMQConfig (q.2app.training 큐 설정)
-                "com.emailagent.rabbitmq.consumer", // TrainingResultConsumer (MailConsumer는 비활성화)
-                "com.emailagent.rabbitmq.event"     // SseFanoutPublisher
+                "com.emailagent.rabbitmq.config",     // RabbitMQConfig (q.2app.training 큐 설정)
+                "com.emailagent.rabbitmq.consumer",  // TrainingResultConsumer (MailConsumer는 비활성화)
+                "com.emailagent.rabbitmq.publisher", // AdminPublisher (모델 배포 요청 발행)
+                "com.emailagent.rabbitmq.event"      // SseFanoutPublisher
         }
 )
 @EnableAsync
