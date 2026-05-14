@@ -10,7 +10,9 @@ public enum KubernetesJobType {
     NETWORK_DICT("02-network-dict-job.yaml", "네트워크 사전 생성"),
     OS_DICT("04-os-dict-job.yaml", "OS 사전 생성"),
     VPN_DICT("05-vpn-dict-job.yaml", "VPN 사전 생성"),
-    DATA_JOB("03-dataset-collection-job.yaml", "데이터취합작업수행");
+    DATA_JOB("03-dataset-collection-job.yaml", "데이터취합작업수행"),
+    NODE_DICT("06-k8s-dict-job.yaml", "노드 점검 수행"),
+    MQ_DICT("07-mq-dict-job.yaml", "큐 점검 수행");
     // 새 Job 추가 시 위 줄 아래에 값을 추가하세요
 
     private final String yamlPath;
