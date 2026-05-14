@@ -50,4 +50,18 @@ public class KubernetesJobController {
         );
     }
 
+    @PostMapping("/jobs/node")
+    public ResponseEntity<KubernetesJobResponse> executeNODEDict() {
+        return ResponseEntity.ok(
+                kubernetesJobExecutorService.executeJob(KubernetesJobType.NODE_DICT)
+        );
+    }
+
+    @PostMapping("/jobs/rabbitmq")
+    public ResponseEntity<KubernetesJobResponse> executeMQDICT() {
+        return ResponseEntity.ok(
+                kubernetesJobExecutorService.executeJob(KubernetesJobType.MQ_DICT)
+        );
+    }
+
 }
