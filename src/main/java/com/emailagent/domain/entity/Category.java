@@ -39,4 +39,9 @@ public class Category {
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Template> templates = new ArrayList<>();
+
+    public void updateByAdmin(String categoryName, String color) {
+        this.categoryName = categoryName;
+        this.color = color;
+    }
 }

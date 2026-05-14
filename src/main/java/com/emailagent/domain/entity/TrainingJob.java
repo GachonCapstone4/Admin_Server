@@ -55,6 +55,12 @@ public class TrainingJob {
     @Column(name = "finished_at")
     private LocalDateTime finishedAt;
 
+    /** AI worker 실행 시작 이벤트 수신 시 RUNNING 처리 */
+    public void running() {
+        this.status = TrainingJobStatus.RUNNING;
+        this.startedAt = LocalDateTime.now();
+    }
+
     /** AI worker 완료 이벤트 수신 시 COMPLETED 처리 */
     public void complete(String modelVersion, String metricsJson, LocalDateTime finishedAt) {
         this.status = TrainingJobStatus.COMPLETED;
@@ -68,5 +74,19 @@ public class TrainingJob {
         this.status = TrainingJobStatus.FAILED;
         this.errorMessage = errorMessage;
         this.finishedAt = finishedAt;
+    }
+
+    /**
+     * 동일 job_id 재수신 시 non-null 변경 필드만 선택적으로 업데이트.
+     * status는 항상 갱신, 나머지는 메시지에 값이 있을 때만 덮어쓴다.
+     */
+    public void applyUpdate(TrainingJobStatus newStatus, String modelVersion, String metricsJson,
+                            String errorMessage, LocalDateTime startedAt, LocalDateTime finishedAt) {
+        this.status = newStatus;
+        if (modelVersion  != null) this.modelVersion  = modelVersion;
+        if (metricsJson   != null) this.metricsJson   = metricsJson;
+        if (errorMessage  != null) this.errorMessage  = errorMessage;
+        if (startedAt     != null) this.startedAt     = startedAt;
+        if (finishedAt    != null) this.finishedAt    = finishedAt;
     }
 }

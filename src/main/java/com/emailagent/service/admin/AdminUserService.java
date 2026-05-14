@@ -3,6 +3,7 @@ package com.emailagent.service.admin;
 import com.emailagent.domain.entity.BusinessProfile;
 import com.emailagent.domain.entity.Integration;
 import com.emailagent.domain.entity.User;
+import com.emailagent.domain.enums.UserRole;
 import com.emailagent.dto.response.admin.user.AdminDeleteIntegrationResponse;
 import com.emailagent.dto.response.admin.user.AdminUserDetailResponse;
 import com.emailagent.dto.response.admin.user.AdminUserIntegrationResponse;
@@ -10,9 +11,13 @@ import com.emailagent.dto.response.admin.user.AdminUserListResponse;
 import com.emailagent.dto.response.admin.user.AdminUserStatusUpdateResponse;
 import com.emailagent.exception.ResourceNotFoundException;
 import com.emailagent.repository.BusinessProfileRepository;
+import com.emailagent.repository.CalendarEventRepository;
 import com.emailagent.repository.DraftReplyRepository;
+import com.emailagent.repository.EmailAnalysisResultRepository;
 import com.emailagent.repository.EmailRepository;
+import com.emailagent.repository.EmailTemplateRecommendationRepository;
 import com.emailagent.repository.IntegrationRepository;
+import com.emailagent.repository.OutboxRepository;
 import com.emailagent.repository.SupportTicketRepository;
 import com.emailagent.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +28,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.ZoneOffset;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -33,9 +38,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminUserService {
 
+    private static final DateTimeFormatter ADMIN_DATE_TIME_FORMATTER =
+            DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
     private final UserRepository userRepository;
     private final BusinessProfileRepository businessProfileRepository;
     private final EmailRepository emailRepository;
+    private final EmailAnalysisResultRepository emailAnalysisResultRepository;
+    private final EmailTemplateRecommendationRepository emailTemplateRecommendationRepository;
+    private final OutboxRepository outboxRepository;
+    private final CalendarEventRepository calendarEventRepository;
     private final DraftReplyRepository draftReplyRepository;
     private final SupportTicketRepository supportTicketRepository;
     private final IntegrationRepository integrationRepository;
@@ -56,11 +68,11 @@ public class AdminUserService {
         if (hasKeyword && "industry_type".equals(searchType)) {
             userPage = userRepository.findByIndustryTypeKeyword(searchKeyword, pageable);
         } else if (hasKeyword && "email".equals(searchType)) {
-            userPage = userRepository.findByEmailContainingIgnoreCase(searchKeyword, pageable);
+            userPage = userRepository.findByRoleAndEmailContainingIgnoreCase(UserRole.USER, searchKeyword, pageable);
         } else if (hasKeyword && "name".equals(searchType)) {
-            userPage = userRepository.findByNameContainingIgnoreCase(searchKeyword, pageable);
+            userPage = userRepository.findByRoleAndNameContainingIgnoreCase(UserRole.USER, searchKeyword, pageable);
         } else {
-            userPage = userRepository.findAll(pageable);
+            userPage = userRepository.findByRole(UserRole.USER, pageable);
         }
 
         // 페이지 내 사용자 ID로 BusinessProfile 배치 조회 (N+1 방지)
@@ -82,7 +94,7 @@ public class AdminUserService {
                         u.getName(),
                         industryTypeMap.getOrDefault(u.getUserId(), null),
                         u.isActive(),
-                        u.getCreatedAt().toInstant(ZoneOffset.UTC).toString()
+                        formatAdminDateTime(u.getCreatedAt())
                 ))
                 .collect(Collectors.toList());
 
@@ -104,9 +116,9 @@ public class AdminUserService {
         long totalGeneratedDrafts = draftReplyRepository.countByUser_UserId(userId);
         long recentTicketCount = supportTicketRepository.countByUser_UserId(userId);
 
-        // last_login_at: null이면 빈 문자열 대신 null 반환 (프론트에서 처리)
+        // DB의 LocalDateTime은 Asia/Seoul 기준 값으로 내려주고, 프론트에서 KST로 표시한다.
         String lastLoginAt = user.getLastLoginAt() != null
-                ? user.getLastLoginAt().toInstant(ZoneOffset.UTC).toString()
+                ? formatAdminDateTime(user.getLastLoginAt())
                 : null;
 
         return new AdminUserDetailResponse(
@@ -141,23 +153,20 @@ public class AdminUserService {
     /**
      * 특정 사용자의 Gmail / Calendar 연동 상태 조회
      * - granted_scopes 문자열에서 gmail/calendar scope 포함 여부로 연동 여부 판별
-     * - 날짜 포맷: "yyyy-MM-dd HH:mm:ss"
+     * - 날짜 포맷: ISO_LOCAL_DATE_TIME, 프론트에서 KST 값으로 해석
      */
     @Transactional(readOnly = true)
     public AdminUserIntegrationResponse getUserIntegration(Long userId) {
         Integration integration = integrationRepository.findByUser_UserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("해당 사용자의 Google 연동 정보를 찾을 수 없습니다. userId=" + userId));
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
         String scopes = integration.getGrantedScopes() != null ? integration.getGrantedScopes().toLowerCase() : "";
         boolean gmailConnected = scopes.contains("gmail") || scopes.contains("mail.google");
         boolean calendarConnected = scopes.contains("calendar");
 
-        String integratedAt = integration.getCreatedAt().atOffset(ZoneOffset.UTC)
-                .toLocalDateTime().format(formatter);
+        String integratedAt = formatAdminDateTime(integration.getCreatedAt());
         String lastSyncAt = integration.getLastSyncedAt() != null
-                ? integration.getLastSyncedAt().atOffset(ZoneOffset.UTC).toLocalDateTime().format(formatter)
+                ? formatAdminDateTime(integration.getLastSyncedAt())
                 : null;
 
         return new AdminUserIntegrationResponse(
@@ -169,17 +178,36 @@ public class AdminUserService {
         );
     }
 
+    private String formatAdminDateTime(LocalDateTime dateTime) {
+        return dateTime != null ? dateTime.format(ADMIN_DATE_TIME_FORMATTER) : null;
+    }
+
     /**
      * 특정 사용자의 Google 연동 강제 해제
-     * - Integration 레코드 삭제 (ON DELETE CASCADE로 관련 데이터도 처리됨)
+     * - Gmail/Calendar 수집 데이터(이메일, 캘린더) 및 연관 분석 데이터 일괄 삭제
+     * - FK 제약 위반 방지를 위해 Email 하위 엔티티부터 순서대로 삭제
      */
     @Transactional
     public AdminDeleteIntegrationResponse deleteUserIntegration(Long userId) {
-        // 존재 여부 확인 (없으면 이미 해제 상태이므로 예외 발생)
         if (!integrationRepository.existsByUser_UserId(userId)) {
             throw new ResourceNotFoundException("해당 사용자의 Google 연동 정보를 찾을 수 없습니다. userId=" + userId);
         }
+
+        // 1단계: Email 하위 엔티티 (email_id FK) — Email 삭제 전 먼저 처리
+        outboxRepository.deleteByUserId(userId);
+        emailAnalysisResultRepository.deleteByUserId(userId);
+        draftReplyRepository.deleteByUser_UserId(userId);
+        emailTemplateRecommendationRepository.deleteByUser_UserId(userId);
+
+        // 2단계: 캘린더 기록 삭제
+        calendarEventRepository.deleteByUser_UserId(userId);
+
+        // 3단계: 이메일 기록 삭제
+        emailRepository.deleteByUser_UserId(userId);
+
+        // 4단계: Integration 삭제
         integrationRepository.deleteByUser_UserId(userId);
+
         return new AdminDeleteIntegrationResponse();
     }
 }

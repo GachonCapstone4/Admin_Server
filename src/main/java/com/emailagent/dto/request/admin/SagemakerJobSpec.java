@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,6 +31,15 @@ public class SagemakerJobSpec {
     private String datasetS3Uri;
     private String modelVersion;
     private String s3ModelPrefix;
+    private VpcConfig vpcConfig;
     private Map<String, String> environment;
     private Map<String, String> hyperParameters;
+
+    @Getter
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class VpcConfig {
+        private List<String> subnets;
+        private List<String> securityGroupIds;
+    }
 }

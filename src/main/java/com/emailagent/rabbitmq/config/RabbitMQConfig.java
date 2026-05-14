@@ -27,6 +27,7 @@ public class RabbitMQConfig {
     // ===================================================
     public static final String EXCHANGE_APP2AI    = "x.app2ai.direct";
     public static final String EXCHANGE_AI2APP    = "x.ai2app.direct";
+    public static final String EXCHANGE_APP2RAG   = "x.app2rag.direct";
     public static final String EXCHANGE_SSE_FANOUT = "x.sse.fanout";
 
     // ===================================================
@@ -38,6 +39,7 @@ public class RabbitMQConfig {
     public static final String QUEUE_DRAFT_RESULT      = "q.2app.draft";
     public static final String QUEUE_DLX_FAILED        = "q.dlx.failed";
     public static final String QUEUE_TRAINING_RESULT   = "q.2app.training";
+    public static final String QUEUE_TEMPLATE_INDEX_INBOUND = "q.2rag.templates.index";
 
     // ===================================================
     // Routing Key 상수
@@ -46,6 +48,8 @@ public class RabbitMQConfig {
     public static final String RK_CLASSIFY_RESULT  = "2app.classify";
     public static final String RK_DRAFT_INBOUND    = "2ai.draft";
     public static final String RK_DRAFT_RESULT     = "2app.draft";
+    public static final String RK_TEMPLATE_INDEX_INBOUND = "2rag.templates.index";
+    public static final String RK_DEPLOYMENT             = "2ai.deployment";
     // ===================================================
     // JSON 메시지 컨버터
     // ===================================================

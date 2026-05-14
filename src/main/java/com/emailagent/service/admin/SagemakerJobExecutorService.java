@@ -19,7 +19,11 @@ import software.amazon.awssdk.services.sagemaker.SageMakerClient;
 import software.amazon.awssdk.services.sagemaker.model.*;
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -102,10 +106,16 @@ public class SagemakerJobExecutorService {
      * - s3Bucket + s3ModelPrefix + jobId → OutputDataConfig.S3OutputPath
      * - useSpotInstance  → EnableManagedSpotTraining (Spot 사용 시 MaxWaitTimeInSeconds 필수)
      */
+    private static final DateTimeFormatter JOB_TIMESTAMP_FMT =
+            DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneId.of("UTC"));
+
     private CreateTrainingJobResponse createTrainingJob(SagemakerJobSpec spec) {
-        // s3OutputPath: s3://{bucket}/{prefix}/{jobId}/
+        // 동일 jobId로 재실행 시 AWS가 중복 이름을 거부하므로, 현재 시각을 suffix로 추가해 유니크 이름 생성
+        String uniqueJobName = spec.getJobId() + "-" + JOB_TIMESTAMP_FMT.format(Instant.now());
+
+        // s3OutputPath: s3://{bucket}/{prefix}/{uniqueJobName}/
         String s3OutputPath = String.format("s3://%s/%s/%s/",
-                spec.getS3Bucket(), spec.getS3ModelPrefix(), spec.getJobId());
+                spec.getS3Bucket(), spec.getS3ModelPrefix(), uniqueJobName);
 
         AlgorithmSpecification algorithmSpec = AlgorithmSpecification.builder()
                 .trainingImage(spec.getTrainingImageUri())
@@ -140,7 +150,7 @@ public class SagemakerJobExecutorService {
                 .build();
 
         CreateTrainingJobRequest.Builder requestBuilder = CreateTrainingJobRequest.builder()
-                .trainingJobName(spec.getJobId())
+                .trainingJobName(uniqueJobName)
                 .roleArn(spec.getRoleArn())
                 .algorithmSpecification(algorithmSpec)
                 .inputDataConfig(List.of(inputChannel))
@@ -149,15 +159,39 @@ public class SagemakerJobExecutorService {
                 .stoppingCondition(stoppingCondition)
                 .enableManagedSpotTraining(spec.isUseSpotInstance());
 
-        if (spec.getEnvironment() != null && !spec.getEnvironment().isEmpty()) {
-            requestBuilder.environment(spec.getEnvironment());
+        // Python 스크립트는 os.getenv("JOB_ID") 등 UPPERCASE 환경변수를 argparse default로 읽는다.
+        // 소문자(job_id)로 주입하면 os.getenv가 None을 반환하므로 반드시 UPPERCASE로 설정해야 한다.
+        Map<String, String> mergedEnv = new LinkedHashMap<>();
+        if (spec.getEnvironment() != null) {
+            mergedEnv.putAll(spec.getEnvironment());
         }
+        mergedEnv.put("JOB_ID", uniqueJobName);
+        mergedEnv.put("MODEL_VERSION", spec.getModelVersion());
+        mergedEnv.put("S3_BUCKET", spec.getS3Bucket());
+        mergedEnv.put("S3_MODEL_PREFIX", spec.getS3ModelPrefix());
+        mergedEnv.put("DATASET_S3_URI", spec.getDatasetS3Uri());
+        requestBuilder.environment(mergedEnv);
+
+        // hyperParameters: epochs, batch_size 등 ML 학습 파라미터만 전달
         if (spec.getHyperParameters() != null && !spec.getHyperParameters().isEmpty()) {
             requestBuilder.hyperParameters(spec.getHyperParameters());
         }
 
+        // VPC 설정이 있으면 지정된 서브넷·보안그룹 내에서 학습 Job을 실행한다
+        SagemakerJobSpec.VpcConfig specVpc = spec.getVpcConfig();
+        if (specVpc != null
+                && specVpc.getSubnets() != null && !specVpc.getSubnets().isEmpty()
+                && specVpc.getSecurityGroupIds() != null && !specVpc.getSecurityGroupIds().isEmpty()) {
+            requestBuilder.vpcConfig(VpcConfig.builder()
+                    .subnets(specVpc.getSubnets())
+                    .securityGroupIds(specVpc.getSecurityGroupIds())
+                    .build());
+            log.info("[SagemakerExecutor] VPC 설정 적용 — subnets={}, securityGroups={}",
+                    specVpc.getSubnets(), specVpc.getSecurityGroupIds());
+        }
+
         log.info("[SagemakerExecutor] CreateTrainingJob 요청 — jobName={}, spot={}",
-                spec.getJobId(), spec.isUseSpotInstance());
+                uniqueJobName, spec.isUseSpotInstance());
         return sageMakerClient.createTrainingJob(requestBuilder.build());
     }
 }
