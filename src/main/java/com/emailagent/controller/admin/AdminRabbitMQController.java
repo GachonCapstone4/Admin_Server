@@ -1,12 +1,14 @@
 package com.emailagent.controller.admin;
 
 import com.emailagent.dto.response.admin.operation.AdminDlqCountResponse;
+import com.emailagent.dto.response.admin.operation.AdminDlqMessageListResponse;
 import com.emailagent.dto.response.admin.operation.AdminDlqPurgeResponse;
 import com.emailagent.service.admin.RabbitMQManagementService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,6 +27,13 @@ public class AdminRabbitMQController {
     public AdminDlqCountResponse getDlqCount() {
         int count = rabbitMQManagementService.getDlqMessageCount();
         return new AdminDlqCountResponse(count);
+    }
+
+    @GetMapping("/dlq/messages")
+    public AdminDlqMessageListResponse getDlqMessages(
+            @RequestParam(defaultValue = "20") int limit
+    ) {
+        return rabbitMQManagementService.getDlqMessages(limit);
     }
 
     @DeleteMapping("/dlq/purge")
