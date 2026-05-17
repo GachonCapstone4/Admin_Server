@@ -22,15 +22,15 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET:your-256-bit-secret-key-here-change-in-production}
-  expiration: 86400000       # 24시간 (ms)
-  refresh-expiration: 604800000  # 7일 (ms)
+  expiration: 86400000 # 24시간 (ms)
+  refresh-expiration: 604800000 # 7일 (ms)
 
 app:
   file:
-    upload-dir: C:/dev/uploads   # 파일 업로드 저장 경로
+    upload-dir: C:/dev/uploads # 파일 업로드 저장 경로
   rabbitmq:
     management:
-      url: http://${RABBITMQ_HOST}:${RABBITMQ_PORT}
+      url: http://${RABBITMQ_HOST}:15672
       username: ${RABBITMQ_USER}
       password: ${RABBITMQ_PASS}
     exchange:
