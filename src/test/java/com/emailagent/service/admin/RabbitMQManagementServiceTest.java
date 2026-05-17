@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withResourceNotFound;
@@ -58,6 +59,71 @@ class RabbitMQManagementServiceTest {
                 .andRespond(withResourceNotFound());
 
         assertThatCode(service::purgeDlqQueue).doesNotThrowAnyException();
+        server.verify();
+    }
+
+    @Test
+    void getDlqMessagesRequeuesMessagesAndReturnsPreview() {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+        RabbitMQManagementService service = service(restTemplate);
+
+        server.expect(once(), requestTo("http://rabbitmq:15672/api/queues/%2F/q.custom.dlq/get"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().json("""
+                        {
+                          "count": 2,
+                          "ackmode": "ack_requeue_true",
+                          "encoding": "auto",
+                          "truncate": 1000
+                        }
+                        """))
+                .andRespond(withSuccess("""
+                        [
+                          {
+                            "exchange": "x.app2ai.direct",
+                            "routing_key": "2ai.draft",
+                            "redelivered": true,
+                            "message_count": 111,
+                            "payload_bytes": 17,
+                            "payload_encoding": "string",
+                            "payload": "{\\"jobId\\":\\"job-1\\"}",
+                            "properties": {
+                              "message_id": "message-1",
+                              "content_type": "application/json",
+                              "timestamp": 1779000000,
+                              "headers": {
+                                "x-death-reason": "rejected"
+                              }
+                            }
+                          }
+                        ]
+                        """, MediaType.APPLICATION_JSON));
+
+        var response = service.getDlqMessages(2);
+
+        assertThat(response.getRequestedCount()).isEqualTo(2);
+        assertThat(response.getReturnedCount()).isEqualTo(1);
+        assertThat(response.getMessages()).hasSize(1);
+        assertThat(response.getMessages().getFirst().getMessageId()).isEqualTo("message-1");
+        assertThat(response.getMessages().getFirst().getHeaders()).containsEntry("x-death-reason", "rejected");
+        server.verify();
+    }
+
+    @Test
+    void getDlqMessagesReturnsEmptyListWhenQueueDoesNotExist() {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+        RabbitMQManagementService service = service(restTemplate);
+
+        server.expect(once(), requestTo("http://rabbitmq:15672/api/queues/%2F/q.custom.dlq/get"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withResourceNotFound());
+
+        var response = service.getDlqMessages(20);
+
+        assertThat(response.getReturnedCount()).isZero();
+        assertThat(response.getMessages()).isEmpty();
         server.verify();
     }
 
