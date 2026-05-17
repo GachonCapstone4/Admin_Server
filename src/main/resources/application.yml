@@ -41,7 +41,7 @@ app:
       classify-result: q.2app.classify
       draft-inbound: q.2ai.draft
       draft-result: q.2app.draft
-      dlx-failed: q.dlx.failed
+      dlx-failed: ${RABBITMQ_DLQ_QUEUE:q.dlx.failed}
     routing-key:
       classify-inbound: 2ai.classify
       classify-result: 2app.classify
@@ -60,7 +60,7 @@ app:
     topic-name: ${GOOGLE_TOPIC_NAME}
     frontend:
       base-url: ${APP_FRONTEND_BASE_URL:http://localhost:5173}
-    email-integration-path: ${APP_FRONTEND_EMAIL_INTEGRATION_PATH:/app/settings?tab=email
+    email-integration-path: ${APP_FRONTEND_EMAIL_INTEGRATION_PATH:/app/settings?tab=email}
 
   webhook:
     pubsub-verify-token: ${PUBSUB_VERIFY_TOKEN}
