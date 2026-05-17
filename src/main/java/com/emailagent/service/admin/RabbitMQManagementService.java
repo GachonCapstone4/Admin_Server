@@ -125,6 +125,7 @@ public class RabbitMQManagementService {
                 .encodeToString((username + ":" + password).getBytes());
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Basic " + credentials);
+        headers.set("Accept", "*/*");
         return headers;
     }
 
